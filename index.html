@@ -289,6 +289,7 @@
 
     <!-- Load the Google API client library -->
     <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <script>
         // Configuration
@@ -324,62 +325,51 @@
         // Initialize the Google API client
         // Replace the current initGoogleAuth function with this one
 function initGoogleAuth() {
-    // Show loading indicator
-    loginBtn.disabled = true;
-    loginBtn.innerHTML = 'Loading...';
+  // Initialize Google Identity Services
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleCredentialResponse
+  });
+  
+  // Display the Sign In With Google button
+  google.accounts.id.renderButton(
+    document.getElementById('login-btn'),
+    { theme: 'outline', size: 'large' }
+  );
+}
+
+// Handle the credential response
+async function handleCredentialResponse(response) {
+  // response.credential contains the JWT ID token
+  const token = response.credential;
+  
+  try {
+    // Decode the JWT to get basic profile info
+    const parts = token.split('.');
+    const payload = JSON.parse(atob(parts[1]));
     
-    gapi.load('client:auth2', () => {
-        gapi.client.init({
-            apiKey: API_KEY,
-            clientId: CLIENT_ID,
-            scope: 'profile email',
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/oauth2/v1/rest']
-        }).then(() => {
-            // Check if user is already signed in
-            const authInstance = gapi.auth2.getAuthInstance();
-            if (authInstance.isSignedIn.get()) {
-                handleSignIn(authInstance.currentUser.get());
-            }
-            
-            // Restore button state
-            loginBtn.disabled = false;
-            loginBtn.innerHTML = 'Sign in with Google';
-            
-            // Add event listeners for auth buttons
-            loginBtn.addEventListener('click', () => {
-                loginBtn.disabled = true;
-                loginBtn.innerHTML = '<span class="loading"></span> Signing in...';
-                
-                authInstance.signIn().then(handleSignIn).catch(err => {
-                    console.error('Google Sign In Error:', err);
-                    alert('Failed to sign in with Google: ' + (err.error || 'Unknown error') + 
-                          '. Please ensure you have an internet connection and cookies enabled.');
-                    
-                    // Restore button state
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = 'Sign in with Google';
-                });
-            });
-            
-            logoutBtn.addEventListener('click', () => {
-                authInstance.signOut().then(handleSignOut);
-            });
-        }).catch(err => {
-            console.error('Google API Client Init Error:', err);
-            
-            // Show a more helpful error message
-            if (err.details && err.details.includes('Not a valid origin')) {
-                alert('Authentication Error: Your domain is not registered with Google. ' +
-                      'If you\'re the developer, please add this domain to your Google Cloud Console.');
-            } else {
-                alert('Failed to initialize Google authentication. Please check your internet connection and try again.');
-            }
-            
-            // Restore button state
-            loginBtn.disabled = false;
-            loginBtn.innerHTML = 'Sign in with Google';
-        });
-    });
+    currentUser = {
+      id: payload.sub,
+      name: payload.name,
+      email: payload.email,
+      image: payload.picture,
+      token: token
+    };
+    
+    // Update UI
+    loginBtn.style.display = 'none';
+    userInfo.style.display = 'flex';
+    userName.textContent = currentUser.name;
+    userImage.src = currentUser.image;
+    loginRequired.style.display = 'none';
+    appContainer.style.display = 'grid';
+    
+    // Fetch user notes
+    fetchNotes();
+  } catch (error) {
+    console.error('Error handling sign in:', error);
+    alert('Failed to process sign-in information. Please try again.');
+  }
 }
         
         // Handle user sign in
