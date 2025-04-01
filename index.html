@@ -240,7 +240,7 @@
     <header>
         <h1>AI Notepad</h1>
         <div class="auth-section">
-            <button id="login-btn">Sign in with Google</button>
+            <div id="login-btn"></div>
             <div id="user-info">
                 <img id="user-image" src="" alt="User">
                 <span id="user-name"></span>
@@ -259,7 +259,7 @@
             <div class="notes-sidebar">
                 <button id="create-note-btn">+ New Note</button>
                 <div id="notes-list" class="notes-list">
-                    <!-- Notes will be listed here -->
+                    
                 </div>
             </div>
             
@@ -287,8 +287,7 @@
         </div>
     </div>
 
-    <!-- Load the Google API client library -->
-    <script src="https://apis.google.com/js/api.js"></script>
+   
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <script>
@@ -321,30 +320,32 @@
         let currentUser = null;
         let notes = [];
         let currentNoteId = null;
+
         
-        // Initialize the Google API client
-        // Replace the current initGoogleAuth function with this one
 function initGoogleAuth() {
-  // Initialize Google Identity Services
-  google.accounts.id.initialize({
-    client_id: CLIENT_ID,
-    callback: handleCredentialResponse
-  });
-  
-  // Display the Sign In With Google button
-  google.accounts.id.renderButton(
-    document.getElementById('login-btn'),
-    { theme: 'outline', size: 'large' }
-  );
-}
+            if (typeof google === 'undefined') {
+                setTimeout(initGoogleAuth, 100);
+                return;
+            }
+            
+            google.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: handleCredentialResponse
+            });
+            
+            google.accounts.id.renderButton(
+                document.getElementById('login-btn'),
+                { theme: 'outline', size: 'large' }
+            );
+            
+            google.accounts.id.prompt();
+        }
 
 // Handle the credential response
 async function handleCredentialResponse(response) {
-  // response.credential contains the JWT ID token
   const token = response.credential;
   
   try {
-    // Decode the JWT to get basic profile info
     const parts = token.split('.');
     const payload = JSON.parse(atob(parts[1]));
     
@@ -401,6 +402,8 @@ async function handleCredentialResponse(response) {
         
         // Handle user sign out
         function handleSignOut() {
+            google.accounts.id.disableAutoSelect();
+            
             currentUser = null;
             notes = [];
             currentNoteId = null;
@@ -639,21 +642,26 @@ async function handleCredentialResponse(response) {
         }
         
         // Event Listeners
-        document.addEventListener('DOMContentLoaded', initGoogleAuth);
-        
-        createNoteBtn.addEventListener('click', () => {
-            clearEditor();
-            document.querySelectorAll('.note-item').forEach(item => {
-                item.classList.remove('active');
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Google auth after the page has loaded
+            initGoogleAuth();
+            
+            // Add event listeners
+            createNoteBtn.addEventListener('click', () => {
+                clearEditor();
+                document.querySelectorAll('.note-item').forEach(item => {
+                    item.classList.remove('active');
+                });
             });
+            
+            saveBtn.addEventListener('click', saveNote);
+            deleteBtn.addEventListener('click', deleteNote);
+            logoutBtn.addEventListener('click', handleSignOut);
+            
+            summarizeBtn.addEventListener('click', () => aiProcessText('summarize'));
+            improveBtn.addEventListener('click', () => aiProcessText('improve'));
+            ideasBtn.addEventListener('click', () => aiProcessText('ideas'));
         });
-        
-        saveBtn.addEventListener('click', saveNote);
-        deleteBtn.addEventListener('click', deleteNote);
-        
-        summarizeBtn.addEventListener('click', () => aiProcessText('summarize'));
-        improveBtn.addEventListener('click', () => aiProcessText('improve'));
-        ideasBtn.addEventListener('click', () => aiProcessText('ideas'));
     </script>
 </body>
 </html>
