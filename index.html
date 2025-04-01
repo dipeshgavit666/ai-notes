@@ -596,8 +596,8 @@ async function handleCredentialResponse(response) {
             }
         }
         
-        // AI functions
-       // AI functions
+
+// AI functions
 async function aiProcessText(action) {
     if (!currentUser) return;
     
@@ -615,15 +615,13 @@ async function aiProcessText(action) {
     aiSuggestion.style.display = 'none';
     
     try {
-        const payload = action === 'ideas' ? { text: content } : { text: content };
-        
         const response = await fetch(`${API_ENDPOINT}/ai/${action}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${currentUser.token}`
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ text: content })
         });
         
         if (response.ok) {
@@ -648,48 +646,6 @@ async function aiProcessText(action) {
         button.disabled = false;
     }
 }
-            if (!currentUser) return;
-            
-            const content = noteContent.value.trim();
-            if (!content) {
-                alert('Please enter some text before using AI features');
-                return;
-            }
-            
-            // Show loading state
-            const button = document.getElementById(`${action}-btn`);
-            const buttonText = button.textContent;
-            button.innerHTML = '<span class="loading"></span>';
-            button.disabled = true;
-            aiSuggestion.style.display = 'none';
-            
-            try {
-                const response = await fetch(`${API_ENDPOINT}/ai/${action}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentUser.token}`
-                    },
-                    body: JSON.stringify({ text: content })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    suggestionText.textContent = data.result;
-                    aiSuggestion.style.display = 'block';
-                } else {
-                    const errorData = await response.json();
-                    console.error(`Error with AI ${action}:`, errorData);
-                    alert(`Failed to process with AI: ${errorData.error || 'Unknown error'}`);
-                }
-            } catch (error) {
-                console.error(`Error with AI ${action}:`, error);
-                alert(`AI processing failed. Please check your connection and try again.`);
-            } finally {
-                button.textContent = buttonText;
-                button.disabled = false;
-            }
-        }
         
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
