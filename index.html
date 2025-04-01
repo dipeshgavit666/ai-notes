@@ -406,23 +406,23 @@ header {
 
         
 function initGoogleAuth() {
-            if (typeof google === 'undefined') {
-                setTimeout(initGoogleAuth, 100);
-                return;
-            }
-            
-            google.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                callback: handleCredentialResponse
-            });
-            
-            google.accounts.id.renderButton(
-                document.getElementById('login-btn'),
-                { theme: 'outline', size: 'large' }
-            );
-            
-            google.accounts.id.prompt();
-        }
+    if (typeof google === 'undefined') {
+        setTimeout(initGoogleAuth, 100);
+        return;
+    }
+    
+    google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: true,
+        cancel_on_tap_outside: false
+    });
+    
+    google.accounts.id.renderButton(
+        document.getElementById('login-btn'),
+        { theme: 'outline', size: 'large' }
+    );
+}
 
 // Handle the credential response
 async function handleCredentialResponse(response) {
@@ -502,33 +502,42 @@ async function handleCredentialResponse(response) {
         
         // Fetch notes from the server
         async function fetchNotes() {
-            try {
-                const response = await fetch(`${API_ENDPOINT}/notes`, {
-                    headers: {
-                        'Authorization': `Bearer ${currentUser.token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    notes = await response.json();
-                    renderNotesList();
-                    
-                    // Load the first note if available
-                    if (notes.length > 0) {
-                        loadNote(notes[0]._id);
-                    } else {
-                        clearEditor();
-                    }
-                } else {
-                    const errorData = await response.json();
-                    console.error('Error response from server:', errorData);
-                    alert(`Failed to fetch notes: ${errorData.error || 'Unknown error'}`);
-                }
-            } catch (error) {
-                console.error('Error fetching notes:', error);
-                alert('Failed to fetch notes. Please check your connection and try again.');
+    try {
+        const response = await fetch(`${API_ENDPOINT}/notes`, {
+            headers: {
+                'Authorization': `Bearer ${currentUser.token}`
             }
+        });
+        
+        if (response.ok) {
+            notes = await response.json();
+            renderNotesList();
+            
+            // Load the first note if available
+            if (notes.length > 0) {
+                loadNote(notes[0]._id);
+            } else {
+                clearEditor();
+            }
+        } else {
+            const status = response.status;
+            let errorText = 'Failed to fetch notes';
+            
+            try {
+                const errorData = await response.json();
+                console.error(`Error response (${status}) from server:`, errorData);
+                errorText += `: ${errorData.error || 'Unknown error'}`;
+            } catch (e) {
+                console.error(`Error response (${status}) with no valid JSON`);
+            }
+            
+            alert(errorText);
         }
+    } catch (error) {
+        console.error('Error fetching notes:', error);
+        alert(`Failed to fetch notes (${error.message}). Please check your connection and try again.`);
+    }
+}
         
         // Render the notes list
         function renderNotesList() {
